@@ -19,18 +19,17 @@
       height: 100vh;
       background: url('https://raw.githubusercontent.com/boobalootoo/spraymobile/main/can.png') no-repeat center bottom;
       background-size: contain;
-      background-repeat: no-repeat;
     }
 
     #cap {
       position: absolute;
-      top: 10vh;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 30vw;
-      height: 30vw;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: auto;
+      aspect-ratio: 1/1; /* keep cap roughly square */
       background: url('https://raw.githubusercontent.com/boobalootoo/spraymobile/main/lid.png') no-repeat center center;
-      background-size: contain;
+      background-size: cover;
       touch-action: none;
       z-index: 10;
     }

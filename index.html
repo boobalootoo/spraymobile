@@ -31,7 +31,7 @@
 
     #cap {
       position: absolute;
-      top: 0;
+      top: -5%; /* Lid slightly above can */
       left: 0;
       width: 100%;
       aspect-ratio: 1/1;
@@ -97,7 +97,7 @@
     }
   });
 
-  // Nozzle press
+  // Nozzle press and spray sound
   nozzle.addEventListener("touchstart", () => {
     if (!capRemoved) return;
     nozzle.classList.add("pressed");

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+1<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -151,6 +151,12 @@
 
   // Load the visuals, then load sounds, then trigger cap removal after 2 seconds
   window.onload = async () => {
+    // Wait for first user interaction (any touch or click)
+    await new Promise(resolve => {
+      window.addEventListener('touchstart', resolve, { once: true });
+      window.addEventListener('click', resolve, { once: true });
+    });
+
     // First, ensure visuals are loaded
     document.getElementById('can').style.display = 'block'; // Ensure can is visible
     document.getElementById('cap').style.display = 'flex'; // Show cap

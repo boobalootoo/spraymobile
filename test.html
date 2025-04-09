@@ -46,7 +46,7 @@
 
     #nozzle {
       position: absolute;
-      top: 7%; /* Moved down from 4% */
+      top: 7%; /* lowered a bit */
       left: 50%;
       transform: translate(-50%, 0);
       width: 15%;
@@ -54,6 +54,7 @@
       background-color: white;
       border-radius: 0%;
       z-index: 5;
+      display: none;
     }
 
     #nozzle.pressed {
@@ -69,7 +70,7 @@
     <img src="https://raw.githubusercontent.com/boobalootoo/spraymobile/main/lid.png" alt="Cap">
   </div>
 
-  <div id="nozzle" style="display: none;"></div>
+  <div id="nozzle"></div>
 
   <script>
     const cap = document.getElementById("cap");
@@ -80,6 +81,13 @@
       spray: new Audio("https://boobalootoo.github.io/HANDS/460408__jay_you__spray-painting.wav"),
       shake: new Audio("https://boobalootoo.github.io/HANDS/523005__dobroide__20200502spraycanshake.wav")
     };
+
+    // Unlock audio on first touch
+    window.addEventListener("touchstart", () => {
+      Object.values(soundFiles).forEach(audio => {
+        audio.play().then(() => audio.pause()).catch(() => {});
+      });
+    }, { once: true });
 
     let capRemoved = false;
     let startY = null;
@@ -99,11 +107,14 @@
       const deltaY = startY - y;
       const deltaX = startX - x;
 
-      if (deltaY > 50 || Math.abs(deltaX) > 50) {
+      if ((deltaY > 50 || Math.abs(deltaX) > 50) && !capRemoved) {
         cap.style.display = "none";
         nozzle.style.display = "block";
         capRemoved = true;
-        soundFiles.capOff.play();
+
+        soundFiles.capOff.pause();
+        soundFiles.capOff.currentTime = 0;
+        soundFiles.capOff.play().catch(err => console.warn("Cap sound failed:", err));
       }
     });
 
@@ -133,13 +144,8 @@
       startSpraying();
     });
 
-    nozzle.addEventListener("touchend", () => {
-      stopSpraying();
-    });
-
-    nozzle.addEventListener("touchcancel", () => {
-      stopSpraying();
-    });
+    nozzle.addEventListener("touchend", stopSpraying);
+    nozzle.addEventListener("touchcancel", stopSpraying);
 
     // Shake detection
     let lastShake = 0;

@@ -36,6 +36,12 @@
       display: flex;
       align-items: flex-start;
       justify-content: center;
+      transition: opacity 0.3s ease;
+    }
+
+    #cap.hidden {
+      opacity: 0;
+      pointer-events: none;
     }
 
     #cap img {
@@ -82,12 +88,14 @@
       shake: new Audio("https://boobalootoo.github.io/HANDS/523005__dobroide__20200502spraycanshake.wav")
     };
 
-    // Unlock audio on first touch
-    window.addEventListener("touchstart", () => {
+    // Unlock audio system on first user interaction
+    const unlockAudio = () => {
       Object.values(soundFiles).forEach(audio => {
         audio.play().then(() => audio.pause()).catch(() => {});
       });
-    }, { once: true });
+      window.removeEventListener("touchstart", unlockAudio);
+    };
+    window.addEventListener("touchstart", unlockAudio, { once: true });
 
     let capRemoved = false;
     let spraying = false;
@@ -95,13 +103,18 @@
     // Remove cap and play sound on touch
     cap.addEventListener("touchstart", () => {
       if (!capRemoved) {
-        cap.style.display = "none";
-        nozzle.style.display = "block";
         capRemoved = true;
+        cap.classList.add("hidden");
+        nozzle.style.display = "block";
 
-        soundFiles.capOff.pause();
-        soundFiles.capOff.currentTime = 0;
-        soundFiles.capOff.play().catch(err => console.warn("Cap sound failed:", err));
+        // Ensure sound plays even if retriggered
+        try {
+          soundFiles.capOff.pause();
+          soundFiles.capOff.currentTime = 0;
+          soundFiles.capOff.play().catch(err => console.warn("Cap-off sound blocked:", err));
+        } catch (err) {
+          console.warn("Cap-off playback error:", err);
+        }
       }
     });
 
@@ -111,7 +124,7 @@
       spraying = true;
       nozzle.classList.add("pressed");
       soundFiles.spray.loop = true;
-      soundFiles.spray.play();
+      soundFiles.spray.play().catch(err => console.warn("Spray sound error:", err));
     };
 
     const stopSpraying = () => {

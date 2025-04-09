@@ -13,14 +13,6 @@
       touch-action: none;
     }
 
-    #can-wrapper {
-      position: relative;
-      width: 100vw;
-      max-width: 600px;
-      aspect-ratio: 1/2;
-      margin: 0 auto;
-    }
-
     #can {
       width: 100%;
       height: 100%;
@@ -29,6 +21,7 @@
       position: absolute;
       top: 40px;
       left: 0;
+      display: block; /* Ensure it's visible right away */
     }
 
     #cap {
@@ -55,7 +48,7 @@
 
     #nozzle {
       position: absolute;
-      top: 10%;
+      top: 13%;
       left: 50%;
       transform: translate(-50%, 0);
       width: 15%;
@@ -70,137 +63,135 @@
     }
 
     #can-img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
     }
 
     #white-square {
-        position: absolute;
-        top: 4%;
-        left: 50%;
-        transform: translate(-50%, 0);
-        width: 15%;
-        height: 8%;
-        background-color: white;
-        border-radius: 0%;
-        z-index: 2;
-        aspect-ratio: 1/1;
+      position: absolute;
+      top: 4%;
+      left: 50%;
+      transform: translate(-50%, 0);
+      width: 15%;
+      height: 8%;
+      background-color: white;
+      border-radius: 0%;
+      z-index: 2;
+      aspect-ratio: 1/1;
     }
   </style>
 </head>
 <body>
-
-<div id="can-wrapper">
   <div id="can">
-        <img id="can-img" src="https://raw.githubusercontent.com/boobalootoo/spraymobile/main/can.png" style="width: 100%; height: 100%; object-fit: contain;">
-        <div id="white-square"></div>
+    <img id="can-img" src="https://raw.githubusercontent.com/boobalootoo/spraymobile/main/can.png">
+    <div id="white-square"></div>
   </div>
-    <div id="cap">
-        <img src="https://raw.githubusercontent.com/boobalootoo/spraymobile/main/lid.png" alt="Cap">
-    </div>
+  <div id="cap">
+    <img src="https://raw.githubusercontent.com/boobalootoo/spraymobile/main/lid.png" alt="Cap">
+  </div>
   <div id="nozzle"></div>
-</div>
 
 <script>
   const cap = document.getElementById("cap");
   const nozzle = document.getElementById("nozzle");
-  const canElement = document.getElementById("can");
   const canImg = document.getElementById("can-img");
-  const whiteSquare = document.getElementById("white-square")
+  const whiteSquare = document.getElementById("white-square");
 
+  // Sounds for cap off, spraying, and shake
+  const capOffSound = new Audio("https://boobalootoo.github.io/HANDS/200375__cbakos__spray-paint-cap-off.wav");
+  const spraySound = new Audio("https://boobalootoo.github.io/HANDS/460408__jay_you__spray-painting.wav");
+  const shakeSound = new Audio("https://boobalootoo.github.io/HANDS/523005__dobroide__20200502spraycanshake.wav");
 
-  const soundFiles = {
-    capOff: new Audio("https://boobalootoo.github.io/HANDS/200375__cbakos__spray-paint-cap-off.wav"),
-    spray: new Audio("https://boobalootoo.github.io/HANDS/460408__jay_you__spray-painting.wav"),
-    shake: new Audio("https://boobalootoo.github.io/HANDS/523005__dobroide__20200502spraycanshake.wav")
-  };
+  spraySound.loop = true;
+  shakeSound.loop = false;
 
   let capRemoved = false;
-  let startY = null;
-  let startX = null;
   let spraying = false;
 
+  // Function to wait for sounds to load
+  const loadSounds = () => {
+    return new Promise((resolve) => {
+      capOffSound.oncanplaythrough = resolve;
+      capOffSound.load(); // Start loading
+    });
+  };
 
-  // Cap drag-to-remove
-    cap.addEventListener("touchstart", (e) => {
-        startY = e.touches[0].clientY;
-        startX = e.touches[0].clientX;
+  // Function to simulate the spray
+  const startSpray = () => {
+    if (!capRemoved || spraying) return;
+    spraying = true;
+    spraySound.currentTime = 0;
+    spraySound.play();
+    nozzle.classList.add("pressed");
+
+    // Simulate rattle with stronger vibration
+    if (navigator.vibrate) {
+      navigator.vibrate([50, 80, 60, 80, 70, 90, 50]); // More powerful vibrations
+    }
+  };
+
+  // Function to stop spray
+  const stopSpray = () => {
+    spraying = false;
+    spraySound.pause();
+    nozzle.classList.remove("pressed");
+  };
+
+  // Function to remove the cap and play the sound
+  const removeCapAndPlaySound = () => {
+    if (!capRemoved) {
+      capRemoved = true;
+      cap.style.display = "none"; // Remove the cap
+      nozzle.style.display = "block"; // Show the nozzle
+      capOffSound.currentTime = 0;
+      capOffSound.play(); // Play the cap-off sound
+    }
+  };
+
+  // Load the visuals, then load sounds, then trigger cap removal after 2 seconds
+  window.onload = async () => {
+    // Wait for first user interaction (any touch or click)
+    await new Promise(resolve => {
+      window.addEventListener('touchstart', resolve, { once: true });
+      window.addEventListener('click', resolve, { once: true });
     });
 
-    cap.addEventListener("touchmove", (e) => {
-        if (!startY || !startX) return;
-        const y = e.touches[0].clientY;
-        const x = e.touches[0].clientX;
-        const deltaY = startY - y;
-        const deltaX = startX - x;
+    // First, ensure visuals are loaded
+    document.getElementById('can').style.display = 'block'; // Ensure can is visible
+    document.getElementById('cap').style.display = 'flex'; // Show cap
+    document.getElementById('nozzle').style.display = 'none'; // Hide nozzle initially
 
+    // Load sounds and wait until they are ready
+    await loadSounds();
 
-        // Adjust the threshold as necessary
-        if (deltaY > 50 || Math.abs(deltaX) > 50) {
-            cap.style.display = "none";
-            nozzle.style.display = "block";
-            capRemoved = true;
-            soundFiles.capOff.play();
-             // Remove the event listeners after detaching the cap.
-            cap.removeEventListener("touchmove", handleCapMove);
-            cap.removeEventListener("touchend", handleCapEnd);
-        }
-    });
+    // After 2 seconds, remove the cap and play the cap-off sound
+    setTimeout(removeCapAndPlaySound, 2000);
+  };
 
-    cap.addEventListener("touchend", (e) => {
-        startY = null;
-        startX = null;
-    });
+  // Touch interactions to spray
+  whiteSquare.addEventListener("touchstart", startSpray);
+  whiteSquare.addEventListener("touchend", stopSpray);
+  whiteSquare.addEventListener("touchcancel", stopSpray);
 
-
-
-  // Nozzle press and spray sound
-    canImg.addEventListener("touchstart", (e) => {
-      e.preventDefault(); // added this line
-      const rect = canImg.getBoundingClientRect();
-      const x = e.touches[0].clientX - rect.left;
-      const y = e.touches[0].clientY - rect.top;
-
-      // Check if the touch is within the nozzle area.
-      const nozzleX = rect.width * 0.5; // centered
-      const nozzleY = rect.height * 0.04;
-      const nozzleRadius = rect.width * 0.075;
-
-      if (Math.sqrt((x - nozzleX) ** 2 + (y - nozzleY) ** 2) < nozzleRadius && capRemoved) {
-          spraying = true;
-          nozzle.classList.add("pressed");
-          soundFiles.spray.loop = true;
-          soundFiles.spray.play();
-      }
-    }, { passive: true });
-
-    canImg.addEventListener("touchend", () => {
-      spraying = false;
-      nozzle.classList.remove("pressed");
-      soundFiles.spray.pause();
-      soundFiles.spray.currentTime = 0;
-    });
-
-    canImg.addEventListener("touchcancel", () => {
-      spraying = false;
-      nozzle.classList.remove("pressed");
-      soundFiles.spray.pause();
-      soundFiles.spray.currentTime = 0;
-    });
-
-
-  // Shake detection
+  // Shake detection (adjusted sensitivity for stronger shake)
   let lastShake = 0;
   window.addEventListener("devicemotion", (e) => {
     const acc = e.accelerationIncludingGravity;
     const total = Math.abs(acc.x) + Math.abs(acc.y) + Math.abs(acc.z);
-    if (total > 25 && Date.now() - lastShake > 1000) {
-      lastShake = Date.now();
-      soundFiles.shake.play();
+    const now = Date.now();
+
+    if (total > 45 && now - lastShake > 1000 && !spraying) {
+      lastShake = now;
+      shakeSound.currentTime = 0;
+      shakeSound.play();
+
+      // Simulated multiple ball rattles (stronger)
+      if (navigator.vibrate) {
+        navigator.vibrate([100, 150, 120, 180, 150, 200]); // Stronger, more intense vibrations
+      }
     }
   });
 </script>
-
 </body>
 </html>

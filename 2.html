@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spray Paint Simulator</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      background: #111;
+      height: 100%;
+      overflow: hidden;
+      touch-action: none;
+    }
+
+    #can {
+      width: 100%;
+      height: 100%;
+      background: url('https://raw.githubusercontent.com/boobalootoo/spraymobile/main/can.png') no-repeat center bottom;
+      background-size: contain;
+      position: absolute;
+      top: 40px;
+      left: 0;
+    }
+
+    #cap {
+      position: absolute;
+      top: 0%;
+      left: 0%;
+      transform: translateX(0%);
+      width: 100%;
+      height: auto;
+      background: url('https://raw.githubusercontent.com/boobalootoo/spraymobile/main/lid.png') no-repeat center center;
+      background-size: contain;
+      touch-action: none;
+      z-index: 10;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+    }
+
+    #cap img {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 45/28;
+    }
+
+    #nozzle {
+      position: absolute;
+      top: 10%;
+      left: 50%;
+      transform: translate(-50%, 0);
+      width: 15%;
+      aspect-ratio: 1/1;
+      border-radius: 0%;
+      display: none;
+      z-index: 5;
+    }
+
+    #nozzle.pressed {
+      transform: translate(-50%, 5px);
+    }
+
+    #can-img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    #white-square {
+      position: absolute;
+      top: 4%;
+      left: 50%;
+      transform: translate(-50%, 0);
+      width: 15%;
+      height: 8%;
+      background-color: white;
+      border-radius: 0%;
+      z-index: 2;
+      aspect-ratio: 1/1;
+      touch-action: none; /* Prevents the context menu */
+    }
+  </style>
+</head>
+<body>
+
+  <div id="can">
+    <img id="can-img" src="https://raw.githubusercontent.com/boobalootoo/spraymobile/main/can.png" style="width: 100%; height: 100%; object-fit: contain;">
+    <div id="white-square"></div>
+  </div>
+  <div id="cap">
+    <img src="https://raw.githubusercontent.com/boobalootoo/spraymobile/main/lid.png" alt="Cap">
+  </div>
+  <div id="nozzle"></div>
+
+  <script>
+    const cap = document.getElementById("cap");
+    const nozzle = document.getElementById("nozzle");
+    const canImg = document.getElementById("can-img");
+    const whiteSquare = document.getElementById("white-square");
+
+    const soundFiles = {
+      capOff: new Audio("https://boobalootoo.github.io/HANDS/200375__cbakos__spray-paint-cap-off.wav"),
+      spray: new Audio("https://boobalootoo.github.io/HANDS/460408__jay_you__spray-painting.wav"),
+      shake: new Audio("https://boobalootoo.github.io/HANDS/523005__dobroide__20200502spraycanshake.wav")
+    };
+
+    let capRemoved = false;
+    let startY = null;
+    let startX = null;
+    let spraying = false;
+
+    // Cap drag-to-remove
+    cap.addEventListener("touchstart", (e) => {
+      startY = e.touches[0].clientY;
+      startX = e.touches[0].clientX;
+    });
+
+    cap.addEventListener("touchmove", (e) => {
+      if (!startY || !startX) return;
+      const y = e.touches[0].clientY;
+      const x = e.touches[0].clientX;
+      const deltaY = startY - y;
+      const deltaX = startX - x;
+
+      if (deltaY > 50 || Math.abs(deltaX) > 50) {
+        cap.style.display = "none";
+        nozzle.style.display = "block";
+        capRemoved = true;
+        soundFiles.capOff.play();
+      }
+    });
+
+    cap.addEventListener("touchend", () => {
+      startY = null;
+      startX = null;
+    });
+
+    // Nozzle press and spray sound
+    function startSpraying() {
+      if (capRemoved && !spraying) {
+        spraying = true;
+        nozzle.classList.add("pressed");
+        soundFiles.spray.loop = true;
+        soundFiles.spray.play();
+      }
+    }
+
+    function stopSpraying() {
+      spraying = false;
+      nozzle.classList.remove("pressed");
+      soundFiles.spray.pause();
+      soundFiles.spray.currentTime = 0;
+    }
+
+    whiteSquare.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      startSpraying();
+    });
+
+    whiteSquare.addEventListener("touchend", (e) => {
+      e.preventDefault();
+      stopSpraying();
+    });
+
+    whiteSquare.addEventListener("touchcancel", stopSpraying);
+
+    // Shake detection
+    let lastShake = 0;
+    window.addEventListener("devicemotion", (e) => {
+      const acc = e.accelerationIncludingGravity;
+      const total = Math.abs(acc.x) + Math.abs(acc.y) + Math.abs(acc.z);
+      if (total > 25 && Date.now() - lastShake > 1000) {
+        lastShake = Date.now();
+        soundFiles.shake.play();
+      }
+    });
+  </script>
+
+</body>
+</html>

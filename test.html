@@ -4,17 +4,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Spray Paint Simulator</title>
   <style>
-    html, body {
+    body, html {
       margin: 0;
       padding: 0;
       background: #111;
       height: 100%;
       overflow: hidden;
       touch-action: none;
-    }
-
-    body.loading * {
-      display: none !important;
     }
 
     #can {
@@ -31,6 +27,7 @@
       position: absolute;
       top: 0%;
       left: 0%;
+      transform: translateX(0%);
       width: 100%;
       height: auto;
       background: url('https://raw.githubusercontent.com/boobalootoo/spraymobile/main/lid.png') no-repeat center center;
@@ -42,10 +39,6 @@
       justify-content: center;
     }
 
-    #cap.hidden {
-      display: none !important;
-    }
-
     #cap img {
       width: 100%;
       height: auto;
@@ -54,151 +47,138 @@
 
     #nozzle {
       position: absolute;
-      top: 7%;
+      top: 13%;
+      left: 50%;
+      transform: translate(-50%, 0);
+      width: 15%;
+      aspect-ratio: 1/1;
+      border-radius: 0%;
+      display: none;
+      z-index: 5;
+    }
+
+    #nozzle.pressed {
+      transform: translate(-50%, 5px);
+    }
+
+    #can-img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    #white-square {
+      position: absolute;
+      top: 4%;
       left: 50%;
       transform: translate(-50%, 0);
       width: 15%;
       height: 8%;
       background-color: white;
       border-radius: 0%;
-      z-index: 5;
-      display: none;
+      z-index: 2;
+      aspect-ratio: 1/1;
     }
 
-    #nozzle.pressed {
-      transform: translate(-50%, 5px);
+    body.hidden *:not(#cap) {
+      display: none !important;
     }
   </style>
 </head>
-<body class="loading">
-
-  <div id="can"></div>
-
+<body class="hidden">
+  <div id="can">
+    <img id="can-img" src="https://raw.githubusercontent.com/boobalootoo/spraymobile/main/can.png">
+    <div id="white-square"></div>
+  </div>
   <div id="cap">
     <img src="https://raw.githubusercontent.com/boobalootoo/spraymobile/main/lid.png" alt="Cap">
   </div>
-
   <div id="nozzle"></div>
 
-  <script>
-    const cap = document.getElementById("cap");
-    const nozzle = document.getElementById("nozzle");
-    const body = document.body;
+<script>
+  const cap = document.getElementById("cap");
+  const nozzle = document.getElementById("nozzle");
+  const canImg = document.getElementById("can-img");
+  const whiteSquare = document.getElementById("white-square");
 
-    const soundFiles = {
-      capOff: new Audio("https://boobalootoo.github.io/HANDS/200375__cbakos__spray-paint-cap-off.wav"),
-      spray: new Audio("https://boobalootoo.github.io/HANDS/460408__jay_you__spray-painting.wav"),
-      shake: new Audio("https://boobalootoo.github.io/HANDS/523005__dobroide__20200502spraycanshake.wav")
-    };
+  const capOffSound = new Audio("https://boobalootoo.github.io/HANDS/200375__cbakos__spray-paint-cap-off.wav");
+  const spraySound = new Audio("https://boobalootoo.github.io/HANDS/460408__jay_you__spray-painting.wav");
+  const shakeSound = new Audio("https://boobalootoo.github.io/HANDS/523005__dobroide__20200502spraycanshake.wav");
 
-    soundFiles.spray.loop = true;
-    soundFiles.shake.loop = true;
+  spraySound.loop = true;
+  shakeSound.loop = false;
 
-    let capRemoved = false;
-    let spraying = false;
-    let shaking = false;
-    let lastShakeTime = 0;
-    let audioUnlocked = false;
-    let sprayVibrateInterval = null;
+  let capRemoved = false;
+  let spraying = false;
+  let lastShake = 0;
 
-    // Wait until capOff is ready before revealing UI
-    soundFiles.capOff.addEventListener("canplaythrough", () => {
-      body.classList.remove("loading");
-    });
-    soundFiles.capOff.load();
-
-    function unlockAudioContext() {
-      if (audioUnlocked) return;
-      audioUnlocked = true;
-
-      // Unlock all sounds
-      Object.values(soundFiles).forEach(sound => {
-        sound.play().then(() => {
-          sound.pause();
-          sound.currentTime = 0;
-        }).catch(() => {});
+  // Unlock AudioContext
+  let audioUnlocked = false;
+  const unlockAudio = () => {
+    if (!audioUnlocked) {
+      capOffSound.play().then(() => {
+        document.body.classList.remove('hidden');
+        audioUnlocked = true;
+      }).catch(() => {
+        // Try again on next interaction
       });
     }
+  };
 
-    // Triggered when touching the cap
-    cap.addEventListener("touchstart", () => {
-      unlockAudioContext();
-      if (capRemoved) return;
+  window.addEventListener("touchstart", unlockAudio, { once: true });
+
+  // Cap tap to remove
+  cap.addEventListener("touchstart", () => {
+    if (!capRemoved) {
       capRemoved = true;
-      cap.classList.add("hidden");
+      cap.style.display = "none";
       nozzle.style.display = "block";
-      try {
-        soundFiles.capOff.currentTime = 0;
-        soundFiles.capOff.play();
-      } catch (err) {
-        console.warn("Cap-off error:", err);
-      }
-    });
+      capOffSound.currentTime = 0;
+      capOffSound.play();
+    }
+  });
 
-    function startSpraying() {
-      if (!capRemoved || spraying) return;
-      spraying = true;
-      nozzle.classList.add("pressed");
+  // Start spraying
+  const startSpray = () => {
+    if (!capRemoved || spraying) return;
+    spraying = true;
+    spraySound.currentTime = 0;
+    spraySound.play();
+    nozzle.classList.add("pressed");
 
-      try {
-        soundFiles.spray.play();
-      } catch (e) {}
+    // Simulate rattle with vibration
+    if (navigator.vibrate) {
+      navigator.vibrate([15, 10, 15, 10, 15]);
+    }
+  };
 
-      // Start light continuous vibration
+  const stopSpray = () => {
+    spraying = false;
+    spraySound.pause();
+    nozzle.classList.remove("pressed");
+  };
+
+  whiteSquare.addEventListener("touchstart", startSpray);
+  whiteSquare.addEventListener("touchend", stopSpray);
+  whiteSquare.addEventListener("touchcancel", stopSpray);
+
+  // Shake detection
+  window.addEventListener("devicemotion", (e) => {
+    const acc = e.accelerationIncludingGravity;
+    const total = Math.abs(acc.x) + Math.abs(acc.y) + Math.abs(acc.z);
+    const now = Date.now();
+
+    if (total > 35 && now - lastShake > 1000 && !spraying) {
+      lastShake = now;
+      shakeSound.currentTime = 0;
+      shakeSound.play();
+
+      // Simulated multiple ball rattles
       if (navigator.vibrate) {
-        sprayVibrateInterval = setInterval(() => {
-          navigator.vibrate([20]);
-        }, 300);
+        navigator.vibrate([30, 20, 30, 20, 30, 20]);
       }
     }
-
-    function stopSpraying() {
-      if (!spraying) return;
-      spraying = false;
-      nozzle.classList.remove("pressed");
-      soundFiles.spray.pause();
-      soundFiles.spray.currentTime = 0;
-
-      // Stop vibration
-      clearInterval(sprayVibrateInterval);
-      navigator.vibrate(0);
-    }
-
-    nozzle.addEventListener("touchstart", (e) => {
-      e.preventDefault();
-      startSpraying();
-    });
-    nozzle.addEventListener("touchend", stopSpraying);
-    nozzle.addEventListener("touchcancel", stopSpraying);
-
-    // Shake detection
-    window.addEventListener("devicemotion", (e) => {
-      const acc = e.accelerationIncludingGravity;
-      const total = Math.abs(acc.x) + Math.abs(acc.y) + Math.abs(acc.z);
-
-      // Less sensitive & ignore while spraying
-      if (total > 35 && !spraying) {
-        if (!shaking) {
-          shaking = true;
-          soundFiles.shake.play();
-
-          // Simulate ball-bearing rattle
-          if (navigator.vibrate) {
-            navigator.vibrate([30, 10, 20, 50, 10]);
-          }
-        }
-        lastShakeTime = Date.now();
-      }
-    });
-
-    setInterval(() => {
-      if (shaking && Date.now() - lastShakeTime > 600) {
-        shaking = false;
-        soundFiles.shake.pause();
-        soundFiles.shake.currentTime = 0;
-      }
-    }, 200);
-  </script>
-
+  });
+</script>
 </body>
 </html>

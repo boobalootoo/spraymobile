@@ -46,7 +46,7 @@
 
     #nozzle {
       position: absolute;
-      top: 7%; /* lowered a bit */
+      top: 7%;
       left: 50%;
       transform: translate(-50%, 0);
       width: 15%;
@@ -90,24 +90,11 @@
     }, { once: true });
 
     let capRemoved = false;
-    let startY = null;
-    let startX = null;
     let spraying = false;
 
-    // Cap drag-to-remove
-    cap.addEventListener("touchstart", (e) => {
-      startY = e.touches[0].clientY;
-      startX = e.touches[0].clientX;
-    });
-
-    cap.addEventListener("touchmove", (e) => {
-      if (!startY || !startX) return;
-      const y = e.touches[0].clientY;
-      const x = e.touches[0].clientX;
-      const deltaY = startY - y;
-      const deltaX = startX - x;
-
-      if ((deltaY > 50 || Math.abs(deltaX) > 50) && !capRemoved) {
+    // Remove cap and play sound on touch
+    cap.addEventListener("touchstart", () => {
+      if (!capRemoved) {
         cap.style.display = "none";
         nozzle.style.display = "block";
         capRemoved = true;
@@ -116,11 +103,6 @@
         soundFiles.capOff.currentTime = 0;
         soundFiles.capOff.play().catch(err => console.warn("Cap sound failed:", err));
       }
-    });
-
-    cap.addEventListener("touchend", () => {
-      startY = null;
-      startX = null;
     });
 
     // Spray logic

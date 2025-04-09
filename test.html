@@ -1,4 +1,4 @@
-1<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -52,7 +52,7 @@
       left: 50%;
       transform: translate(-50%, 0);
       width: 15%;
-      aspect-ratio: 1/1;
+      height: 8%; /* Ensures nozzle is square */
       border-radius: 0%;
       display: none;
       z-index: 5;
@@ -124,11 +124,6 @@
     spraySound.currentTime = 0;
     spraySound.play();
     nozzle.classList.add("pressed");
-
-    // Simulate rattle with stronger vibration
-    if (navigator.vibrate) {
-      navigator.vibrate([50, 80, 60, 80, 70, 90, 50]); // More powerful vibrations
-    }
   };
 
   // Function to stop spray
@@ -181,15 +176,10 @@
     const total = Math.abs(acc.x) + Math.abs(acc.y) + Math.abs(acc.z);
     const now = Date.now();
 
-    if (total > 45 && now - lastShake > 1000 && !spraying) {
+    if (total > 25 && now - lastShake > 1000 && !spraying) {
       lastShake = now;
       shakeSound.currentTime = 0;
       shakeSound.play();
-
-      // Simulated multiple ball rattles (stronger)
-      if (navigator.vibrate) {
-        navigator.vibrate([100, 150, 120, 180, 150, 200]); // Stronger, more intense vibrations
-      }
     }
   });
 </script>

@@ -81,7 +81,7 @@
         left: 50%;
         transform: translate(-50%, 0);
         width: 15%;
-        height: 8%;  /* Changed from 15% to 8% */
+        height: 8%;
         background-color: white;
         border-radius: 0%;
         z-index: 2;
@@ -157,6 +157,7 @@
 
   // Nozzle press and spray sound
     canImg.addEventListener("touchstart", (e) => {
+      e.preventDefault(); // added this line
       const rect = canImg.getBoundingClientRect();
       const x = e.touches[0].clientX - rect.left;
       const y = e.touches[0].clientY - rect.top;

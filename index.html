@@ -1,110 +1,84 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Spray Paint Simulator</title>
+  <meta charset="UTF-8">
+  <title>Spray Can with Lid Interaction</title>
   <style>
     body, html {
       margin: 0;
       padding: 0;
-      background: #111;
-      height: 100%;
       overflow: hidden;
       touch-action: none;
+      background: #f0f0f0;
+    }
+    #container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+    }
+    #can, #lid {
+      position: absolute;
+      width: 100vw;
+      left: 0;
+      user-select: none;
+      touch-action: none;
+      transition: top 0.2s ease;
     }
     #can {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      background: url('https://raw.githubusercontent.com/boobalootoo/spraymobile/main/can.png') no-repeat center bottom;
-      background-size: contain;
+      bottom: 0;
     }
-    #cap {
-      position: absolute;
-      top: 10%;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 120px;
-      height: 120px;
-      background: url('https://raw.githubusercontent.com/boobalootoo/spraymobile/main/lid.png') no-repeat center center;
-      background-size: contain;
-      touch-action: none;
-    }
-    #nozzle {
-      position: absolute;
-      top: 26%;
-      left: 50%;
-      transform: translate(-50%, 0);
-      width: 40px;
-      height: 40px;
-      background: radial-gradient(circle, #ccc 40%, #999 100%);
-      border-radius: 50%;
-      display: none;
-    }
-    #nozzle.pressed {
-      transform: translate(-50%, 5px);
+    #lid {
+      top: calc(100vh - var(--lid-height));
     }
   </style>
 </head>
 <body>
+  <div id="container">
+    <img id="can" src="can.png" />
+    <img id="lid" src="lid.png" />
+  </div>
 
-<div id="can">
-  <div id="cap"></div>
-  <div id="nozzle"></div>
-</div>
+  <script>
+    const lid = document.getElementById('lid');
+    const can = document.getElementById('can');
+    let isDragging = false;
+    let startY = 0;
+    let lidStartTop = 0;
+    let lidHeight = 0;
 
-<script>
-  const cap = document.getElementById("cap");
-  const nozzle = document.getElementById("nozzle");
+    // Wait until images are loaded to position things
+    window.onload = () => {
+      lidHeight = lid.offsetHeight;
+      document.documentElement.style.setProperty('--lid-height', lidHeight + 'px');
+      lid.style.top = (window.innerHeight - lidHeight) + 'px';
+    };
 
-  const soundFiles = {
-    capOff: new Audio("https://boobalootoo.github.io/HANDS/200375__cbakos__spray-paint-cap-off.wav"),
-    spray: new Audio("https://boobalootoo.github.io/HANDS/460408__jay_you__spray-painting.wav"),
-    shake: new Audio("https://boobalootoo.github.io/HANDS/523005__dobroide__20200502spraycanshake.wav")
-  };
+    lid.addEventListener('touchstart', (e) => {
+      isDragging = true;
+      startY = e.touches[0].clientY;
+      lidStartTop = parseFloat(lid.style.top);
+      lid.style.transition = 'none';
+    });
 
-  let capRemoved = false;
+    lid.addEventListener('touchmove', (e) => {
+      if (!isDragging) return;
+      const touchY = e.touches[0].clientY;
+      const delta = touchY - startY;
+      let newTop = lidStartTop + delta;
 
-  // Cap drag-to-remove
-  let startY = null;
-  cap.addEventListener("touchstart", (e) => {
-    startY = e.touches[0].clientY;
-  });
-  cap.addEventListener("touchmove", (e) => {
-    if (!startY) return;
-    const y = e.touches[0].clientY;
-    if (startY - y > 80) { // dragged up 80px
-      cap.style.display = "none";
-      nozzle.style.display = "block";
-      capRemoved = true;
-      soundFiles.capOff.play();
-    }
-  });
+      // Limit how far lid can be dragged (don't go below original)
+      newTop = Math.min(newTop, window.innerHeight - lidHeight - 20);
+      // Limit max drag up (e.g., 200px above start)
+      newTop = Math.max(newTop, window.innerHeight - lidHeight - 200);
 
-  // Nozzle press to spray
-  nozzle.addEventListener("touchstart", () => {
-    if (!capRemoved) return;
-    nozzle.classList.add("pressed");
-    soundFiles.spray.loop = true;
-    soundFiles.spray.play();
-  });
-  nozzle.addEventListener("touchend", () => {
-    nozzle.classList.remove("pressed");
-    soundFiles.spray.pause();
-    soundFiles.spray.currentTime = 0;
-  });
+      lid.style.top = newTop + 'px';
+    });
 
-  // Shake detection
-  let lastShake = 0;
-  window.addEventListener("devicemotion", (e) => {
-    const acc = e.accelerationIncludingGravity;
-    const total = Math.abs(acc.x) + Math.abs(acc.y) + Math.abs(acc.z);
-    if (total > 25 && Date.now() - lastShake > 1000) {
-      lastShake = Date.now();
-      soundFiles.shake.play();
-    }
-  });
-</script>
-
+    lid.addEventListener('touchend', () => {
+      isDragging = false;
+      lid.style.transition = 'top 0.3s ease';
+      lid.style.top = (window.innerHeight - lidHeight) + 'px'; // Snap back
+    });
+  </script>
 </body>
 </html>

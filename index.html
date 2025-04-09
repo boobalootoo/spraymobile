@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spray Paint Simulator</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      background: #111;
+      height: 100%;
+      overflow: hidden;
+      touch-action: none;
+    }
+    #can {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: url('https://boobalootoo.github.io/HANDS/can-body.png') no-repeat center bottom;
+      background-size: contain;
+    }
+    #cap {
+      position: absolute;
+      top: 20%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 150px;
+      height: 150px;
+      background: url('https://boobalootoo.github.io/HANDS/can-cap.png') no-repeat center center;
+      background-size: contain;
+      touch-action: none;
+    }
+    #nozzle {
+      position: absolute;
+      top: 25%;
+      left: 50%;
+      transform: translate(-50%, 0);
+      width: 50px;
+      height: 50px;
+      background: url('https://boobalootoo.github.io/HANDS/can-nozzle.png') no-repeat center center;
+      background-size: contain;
+      display: none;
+    }
+    #nozzle.pressed {
+      transform: translate(-50%, 5px);
+    }
+  </style>
+</head>
+<body>
+
+<div id="can">
+  <div id="cap"></div>
+  <div id="nozzle"></div>
+</div>
+
+<script>
+  const cap = document.getElementById("cap");
+  const nozzle = document.getElementById("nozzle");
+
+  const soundFiles = {
+    capOff: new Audio("https://boobalootoo.github.io/HANDS/200375__cbakos__spray-paint-cap-off.wav"),
+    spray: new Audio("https://boobalootoo.github.io/HANDS/460408__jay_you__spray-painting.wav"),
+    shake: new Audio("https://boobalootoo.github.io/HANDS/523005__dobroide__20200502spraycanshake.wav")
+  };
+
+  let capRemoved = false;
+
+  // Cap drag-to-remove
+  let startY = null;
+  cap.addEventListener("touchstart", (e) => {
+    startY = e.touches[0].clientY;
+  });
+  cap.addEventListener("touchmove", (e) => {
+    if (!startY) return;
+    const y = e.touches[0].clientY;
+    if (startY - y > 80) { // dragged up 80px
+      cap.style.display = "none";
+      nozzle.style.display = "block";
+      capRemoved = true;
+      soundFiles.capOff.play();
+    }
+  });
+
+  // Nozzle press to spray
+  nozzle.addEventListener("touchstart", () => {
+    if (!capRemoved) return;
+    nozzle.classList.add("pressed");
+    soundFiles.spray.loop = true;
+    soundFiles.spray.play();
+  });
+  nozzle.addEventListener("touchend", () => {
+    nozzle.classList.remove("pressed");
+    soundFiles.spray.pause();
+    soundFiles.spray.currentTime = 0;
+  });
+
+  // Shake detection
+  let lastShake = 0;
+  window.addEventListener("devicemotion", (e) => {
+    const acc = e.accelerationIncludingGravity;
+    const total = Math.abs(acc.x) + Math.abs(acc.y) + Math.abs(acc.z);
+    if (total > 25 && Date.now() - lastShake > 1000) {
+      lastShake = Date.now();
+      soundFiles.shake.play();
+    }
+  });
+</script>
+
+</body>
+</html>

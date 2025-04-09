@@ -127,8 +127,8 @@
 
   window.addEventListener("touchstart", unlockAudio, { once: true });
 
-  // Cap tap to remove
-  cap.addEventListener("touchstart", () => {
+  // Cap removal after 2 seconds
+  setTimeout(() => {
     if (!capRemoved) {
       capRemoved = true;
       cap.style.display = "none";
@@ -136,7 +136,7 @@
       capOffSound.currentTime = 0;
       capOffSound.play();
     }
-  });
+  }, 2000); // Trigger after 2 seconds
 
   // Start spraying
   const startSpray = () => {
@@ -146,9 +146,9 @@
     spraySound.play();
     nozzle.classList.add("pressed");
 
-    // Simulate rattle with vibration
+    // Simulate rattle with stronger vibration
     if (navigator.vibrate) {
-      navigator.vibrate([15, 10, 15, 10, 15]);
+      navigator.vibrate([50, 80, 60, 80, 70, 90, 50]); // More powerful vibrations
     }
   };
 
@@ -162,20 +162,20 @@
   whiteSquare.addEventListener("touchend", stopSpray);
   whiteSquare.addEventListener("touchcancel", stopSpray);
 
-  // Shake detection
+  // Shake detection (adjusted sensitivity for stronger shake)
   window.addEventListener("devicemotion", (e) => {
     const acc = e.accelerationIncludingGravity;
     const total = Math.abs(acc.x) + Math.abs(acc.y) + Math.abs(acc.z);
     const now = Date.now();
 
-    if (total > 35 && now - lastShake > 1000 && !spraying) {
+    if (total > 45 && now - lastShake > 1000 && !spraying) {
       lastShake = now;
       shakeSound.currentTime = 0;
       shakeSound.play();
 
-      // Simulated multiple ball rattles
+      // Simulated multiple ball rattles (stronger)
       if (navigator.vibrate) {
-        navigator.vibrate([30, 20, 30, 20, 30, 20]);
+        navigator.vibrate([100, 150, 120, 180, 150, 200]); // Stronger, more intense vibrations
       }
     }
   });

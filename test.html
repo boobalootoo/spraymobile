@@ -91,13 +91,15 @@
       shake: new Audio("https://boobalootoo.github.io/HANDS/523005__dobroide__20200502spraycanshake.wav")
     };
 
-    // Allow shake sound to loop for as long as shaking continues
+    soundFiles.spray.loop = true;
     soundFiles.shake.loop = true;
 
     let capRemoved = false;
     let spraying = false;
     let shaking = false;
+    let lastShakeTime = 0;
     let audioUnlocked = false;
+    let sprayVibrateInterval = null;
 
     // Wait until capOff is ready before revealing UI
     soundFiles.capOff.addEventListener("canplaythrough", () => {
@@ -105,81 +107,92 @@
     });
     soundFiles.capOff.load();
 
-    function unlockAudio() {
+    function unlockAudioContext() {
       if (audioUnlocked) return;
       audioUnlocked = true;
-      Object.values(soundFiles).forEach(audio => {
-        audio.play().then(() => {
-          audio.pause();
-          audio.currentTime = 0;
+
+      // Unlock all sounds
+      Object.values(soundFiles).forEach(sound => {
+        sound.play().then(() => {
+          sound.pause();
+          sound.currentTime = 0;
         }).catch(() => {});
       });
     }
 
-    window.addEventListener("touchstart", unlockAudio, { once: true });
-
-    // Cap remove on touch
+    // Triggered when touching the cap
     cap.addEventListener("touchstart", () => {
+      unlockAudioContext();
       if (capRemoved) return;
       capRemoved = true;
       cap.classList.add("hidden");
       nozzle.style.display = "block";
-
       try {
         soundFiles.capOff.currentTime = 0;
-        soundFiles.capOff.play().catch(err => {
-          console.warn("Cap-off sound failed:", err);
-        });
+        soundFiles.capOff.play();
       } catch (err) {
         console.warn("Cap-off error:", err);
       }
     });
 
-    // Spray logic
-    const startSpraying = () => {
+    function startSpraying() {
       if (!capRemoved || spraying) return;
       spraying = true;
       nozzle.classList.add("pressed");
-      soundFiles.spray.loop = true;
-      soundFiles.spray.play().catch(err => console.warn("Spray sound error:", err));
-    };
 
-    const stopSpraying = () => {
+      try {
+        soundFiles.spray.play();
+      } catch (e) {}
+
+      // Start light continuous vibration
+      if (navigator.vibrate) {
+        sprayVibrateInterval = setInterval(() => {
+          navigator.vibrate([20]);
+        }, 300);
+      }
+    }
+
+    function stopSpraying() {
       if (!spraying) return;
       spraying = false;
       nozzle.classList.remove("pressed");
       soundFiles.spray.pause();
       soundFiles.spray.currentTime = 0;
-    };
+
+      // Stop vibration
+      clearInterval(sprayVibrateInterval);
+      navigator.vibrate(0);
+    }
 
     nozzle.addEventListener("touchstart", (e) => {
       e.preventDefault();
       startSpraying();
     });
-
     nozzle.addEventListener("touchend", stopSpraying);
     nozzle.addEventListener("touchcancel", stopSpraying);
 
     // Shake detection
-    let lastShakeTime = 0;
-
     window.addEventListener("devicemotion", (e) => {
       const acc = e.accelerationIncludingGravity;
-      const intensity = Math.abs(acc.x) + Math.abs(acc.y) + Math.abs(acc.z);
+      const total = Math.abs(acc.x) + Math.abs(acc.y) + Math.abs(acc.z);
 
-      // Shake threshold raised to reduce sensitivity
-      if (intensity > 35 && !spraying) {
+      // Less sensitive & ignore while spraying
+      if (total > 35 && !spraying) {
         if (!shaking) {
           shaking = true;
-          soundFiles.shake.play().catch(err => console.warn("Shake sound error:", err));
+          soundFiles.shake.play();
+
+          // Simulate ball-bearing rattle
+          if (navigator.vibrate) {
+            navigator.vibrate([30, 10, 20, 50, 10]);
+          }
         }
         lastShakeTime = Date.now();
       }
     });
 
-    // Stop shake sound if no shake detected for 500ms
     setInterval(() => {
-      if (shaking && Date.now() - lastShakeTime > 500) {
+      if (shaking && Date.now() - lastShakeTime > 600) {
         shaking = false;
         soundFiles.shake.pause();
         soundFiles.shake.currentTime = 0;

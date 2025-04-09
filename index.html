@@ -33,10 +33,10 @@
       position: absolute;
       top: 0; /* Aligns the lid to the very top of the page */
       left: 0;
-      width: 100%;
-      aspect-ratio: 1/1;
+      width: 100%; /* Takes the full width */
+      height: auto; /* Adjusts height based on the lid's natural aspect ratio */
       background: url('https://raw.githubusercontent.com/boobalootoo/spraymobile/main/lid.png') no-repeat center center;
-      background-size: contain;
+      background-size: contain; /* Ensures the lid fits inside the bounds */
       touch-action: none;
       z-index: 10;
     }

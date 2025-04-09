@@ -26,19 +26,31 @@
       height: 100%;
       background: url('https://raw.githubusercontent.com/boobalootoo/spraymobile/main/can.png') no-repeat center bottom;
       background-size: contain;
-      position: relative;
+      position: absolute; /* Changed to absolute */
+      top: 40px; /* Increased top to move can down */
+      left: 0;
     }
 
     #cap {
-      position: absolute;
-      top: 0; /* Aligns the lid to the very top of the page */
-      left: 0;
-      width: 100%; /* Takes the full width */
-      height: auto; /* Adjusts height based on the lid's natural aspect ratio */
+      position: absolute; /* Changed to absolute */
+      top: 0%;
+      left: 0%;
+      transform: translateX(0%);
+      width: 100%;
+      height: auto;
       background: url('https://raw.githubusercontent.com/boobalootoo/spraymobile/main/lid.png') no-repeat center center;
-      background-size: contain; /* Ensures the lid fits inside the bounds */
+      background-size: contain;
       touch-action: none;
       z-index: 10;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+    }
+
+    #cap img {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 45/28;
     }
 
     #nozzle {
@@ -63,14 +75,18 @@
 
 <div id="can-wrapper">
   <div id="can">
-    <div id="cap"></div>
-    <div id="nozzle"></div>
+        <img id="can-img" src="https://raw.githubusercontent.com/boobalootoo/spraymobile/main/can.png" style="width: 100%; height: 100%; object-fit: contain;">
   </div>
+    <div id="cap">
+        <img src="https://raw.githubusercontent.com/boobalootoo/spraymobile/main/lid.png" alt="Cap">
+    </div>
+  <div id="nozzle"></div>
 </div>
 
 <script>
   const cap = document.getElementById("cap");
   const nozzle = document.getElementById("nozzle");
+  const canElement = document.getElementById("can");
 
   const soundFiles = {
     capOff: new Audio("https://boobalootoo.github.io/HANDS/200375__cbakos__spray-paint-cap-off.wav"),
@@ -80,22 +96,39 @@
 
   let capRemoved = false;
   let startY = null;
+  let startX = null;
 
   // Cap drag-to-remove
-  cap.addEventListener("touchstart", (e) => {
-    startY = e.touches[0].clientY;
-  });
+    cap.addEventListener("touchstart", (e) => {
+        startY = e.touches[0].clientY;
+        startX = e.touches[0].clientX;
+    });
 
-  cap.addEventListener("touchmove", (e) => {
-    if (!startY) return;
-    const y = e.touches[0].clientY;
-    if (startY - y > 50) {
-      cap.style.display = "none";
-      nozzle.style.display = "block";
-      capRemoved = true;
-      soundFiles.capOff.play();
-    }
-  });
+    cap.addEventListener("touchmove", (e) => {
+        if (!startY || !startX) return;
+        const y = e.touches[0].clientY;
+        const x = e.touches[0].clientX;
+        const deltaY = startY - y;
+        const deltaX = startX - x;
+
+
+        // Adjust the threshold as necessary
+        if (deltaY > 50 || Math.abs(deltaX) > 50) {
+            cap.style.display = "none";
+            nozzle.style.display = "block";
+            capRemoved = true;
+            soundFiles.capOff.play();
+             // Remove the event listeners after detaching the cap.
+            cap.removeEventListener("touchmove", handleCapMove);
+            cap.removeEventListener("touchend", handleCapEnd);
+        }
+    });
+
+    cap.addEventListener("touchend", (e) => {
+        startY = null;
+        startX = null;
+    });
+
 
   // Nozzle press and spray sound
   nozzle.addEventListener("touchstart", () => {

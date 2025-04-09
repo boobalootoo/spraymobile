@@ -21,6 +21,7 @@
       position: absolute;
       top: 40px;
       left: 0;
+      display: block; /* Ensure it's visible right away */
     }
 
     #cap {
@@ -79,13 +80,9 @@
       z-index: 2;
       aspect-ratio: 1/1;
     }
-
-    body.hidden *:not(#cap) {
-      display: none !important;
-    }
   </style>
 </head>
-<body class="hidden">
+<body>
   <div id="can">
     <img id="can-img" src="https://raw.githubusercontent.com/boobalootoo/spraymobile/main/can.png">
     <div id="white-square"></div>
@@ -101,6 +98,7 @@
   const canImg = document.getElementById("can-img");
   const whiteSquare = document.getElementById("white-square");
 
+  // Sounds for cap off, spraying, and shake
   const capOffSound = new Audio("https://boobalootoo.github.io/HANDS/200375__cbakos__spray-paint-cap-off.wav");
   const spraySound = new Audio("https://boobalootoo.github.io/HANDS/460408__jay_you__spray-painting.wav");
   const shakeSound = new Audio("https://boobalootoo.github.io/HANDS/523005__dobroide__20200502spraycanshake.wav");
@@ -110,35 +108,16 @@
 
   let capRemoved = false;
   let spraying = false;
-  let lastShake = 0;
 
-  // Unlock AudioContext
-  let audioUnlocked = false;
-  const unlockAudio = () => {
-    if (!audioUnlocked) {
-      capOffSound.play().then(() => {
-        document.body.classList.remove('hidden');
-        audioUnlocked = true;
-      }).catch(() => {
-        // Try again on next interaction
-      });
-    }
+  // Function to wait for sounds to load
+  const loadSounds = () => {
+    return new Promise((resolve) => {
+      capOffSound.oncanplaythrough = resolve;
+      capOffSound.load(); // Start loading
+    });
   };
 
-  window.addEventListener("touchstart", unlockAudio, { once: true });
-
-  // Cap removal after 2 seconds
-  setTimeout(() => {
-    if (!capRemoved) {
-      capRemoved = true;
-      cap.style.display = "none";
-      nozzle.style.display = "block";
-      capOffSound.currentTime = 0;
-      capOffSound.play();
-    }
-  }, 2000); // Trigger after 2 seconds
-
-  // Start spraying
+  // Function to simulate the spray
   const startSpray = () => {
     if (!capRemoved || spraying) return;
     spraying = true;
@@ -152,17 +131,45 @@
     }
   };
 
+  // Function to stop spray
   const stopSpray = () => {
     spraying = false;
     spraySound.pause();
     nozzle.classList.remove("pressed");
   };
 
+  // Function to remove the cap and play the sound
+  const removeCapAndPlaySound = () => {
+    if (!capRemoved) {
+      capRemoved = true;
+      cap.style.display = "none"; // Remove the cap
+      nozzle.style.display = "block"; // Show the nozzle
+      capOffSound.currentTime = 0;
+      capOffSound.play(); // Play the cap-off sound
+    }
+  };
+
+  // Load the visuals, then load sounds, then trigger cap removal after 2 seconds
+  window.onload = async () => {
+    // First, ensure visuals are loaded
+    document.getElementById('can').style.display = 'block'; // Ensure can is visible
+    document.getElementById('cap').style.display = 'flex'; // Show cap
+    document.getElementById('nozzle').style.display = 'none'; // Hide nozzle initially
+
+    // Load sounds and wait until they are ready
+    await loadSounds();
+
+    // After 2 seconds, remove the cap and play the cap-off sound
+    setTimeout(removeCapAndPlaySound, 2000);
+  };
+
+  // Touch interactions to spray
   whiteSquare.addEventListener("touchstart", startSpray);
   whiteSquare.addEventListener("touchend", stopSpray);
   whiteSquare.addEventListener("touchcancel", stopSpray);
 
   // Shake detection (adjusted sensitivity for stronger shake)
+  let lastShake = 0;
   window.addEventListener("devicemotion", (e) => {
     const acc = e.accelerationIncludingGravity;
     const total = Math.abs(acc.x) + Math.abs(acc.y) + Math.abs(acc.z);

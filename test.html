@@ -4,13 +4,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Spray Paint Simulator</title>
   <style>
-    body, html {
+    html, body {
       margin: 0;
       padding: 0;
       background: #111;
       height: 100%;
       overflow: hidden;
       touch-action: none;
+    }
+
+    body.loading * {
+      display: none !important;
     }
 
     #can {
@@ -68,7 +72,7 @@
     }
   </style>
 </head>
-<body>
+<body class="loading">
 
   <div id="can"></div>
 
@@ -81,6 +85,7 @@
   <script>
     const cap = document.getElementById("cap");
     const nozzle = document.getElementById("nozzle");
+    const body = document.body;
 
     const soundFiles = {
       capOff: new Audio("https://boobalootoo.github.io/HANDS/200375__cbakos__spray-paint-cap-off.wav"),
@@ -88,70 +93,81 @@
       shake: new Audio("https://boobalootoo.github.io/HANDS/523005__dobroide__20200502spraycanshake.wav")
     };
 
-    // Unlock audio system on first user interaction
-    const unlockAudio = () => {
-      Object.values(soundFiles).forEach(audio => {
-        audio.play().then(() => audio.pause()).catch(() => {});
-      });
-      window.removeEventListener("touchstart", unlockAudio);
-    };
-    window.addEventListener("touchstart", unlockAudio, { once: true });
+    // Wait for capOff sound to be ready
+    soundFiles.capOff.addEventListener("canplaythrough", () => {
+      // Show the interface
+      body.classList.remove("loading");
+      initSimulator();
+    });
 
-    let capRemoved = false;
-    let spraying = false;
+    // Hide everything unless audio loads
+    soundFiles.capOff.load();
 
-    // Remove cap and play sound on touch
-    cap.addEventListener("touchstart", () => {
-      if (!capRemoved) {
-        capRemoved = true;
-        cap.classList.add("hidden");
-        nozzle.style.display = "block";
+    function initSimulator() {
+      let capRemoved = false;
+      let spraying = false;
 
-        // Ensure sound plays even if retriggered
-        try {
-          soundFiles.capOff.pause();
-          soundFiles.capOff.currentTime = 0;
-          soundFiles.capOff.play().catch(err => console.warn("Cap-off sound blocked:", err));
-        } catch (err) {
-          console.warn("Cap-off playback error:", err);
+      // Unlock audio system on first touch
+      const unlockAudio = () => {
+        Object.values(soundFiles).forEach(audio => {
+          audio.play().then(() => audio.pause()).catch(() => {});
+        });
+        window.removeEventListener("touchstart", unlockAudio);
+      };
+      window.addEventListener("touchstart", unlockAudio, { once: true });
+
+      // Cap touch to remove
+      cap.addEventListener("touchstart", () => {
+        if (!capRemoved) {
+          capRemoved = true;
+          cap.classList.add("hidden");
+          nozzle.style.display = "block";
+
+          try {
+            soundFiles.capOff.pause();
+            soundFiles.capOff.currentTime = 0;
+            soundFiles.capOff.play().catch(err => console.warn("Cap-off sound blocked:", err));
+          } catch (err) {
+            console.warn("Cap-off playback error:", err);
+          }
         }
-      }
-    });
+      });
 
-    // Spray logic
-    const startSpraying = () => {
-      if (!capRemoved) return;
-      spraying = true;
-      nozzle.classList.add("pressed");
-      soundFiles.spray.loop = true;
-      soundFiles.spray.play().catch(err => console.warn("Spray sound error:", err));
-    };
+      // Spray logic
+      const startSpraying = () => {
+        if (!capRemoved) return;
+        spraying = true;
+        nozzle.classList.add("pressed");
+        soundFiles.spray.loop = true;
+        soundFiles.spray.play().catch(err => console.warn("Spray sound error:", err));
+      };
 
-    const stopSpraying = () => {
-      spraying = false;
-      nozzle.classList.remove("pressed");
-      soundFiles.spray.pause();
-      soundFiles.spray.currentTime = 0;
-    };
+      const stopSpraying = () => {
+        spraying = false;
+        nozzle.classList.remove("pressed");
+        soundFiles.spray.pause();
+        soundFiles.spray.currentTime = 0;
+      };
 
-    nozzle.addEventListener("touchstart", (e) => {
-      e.preventDefault();
-      startSpraying();
-    });
+      nozzle.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        startSpraying();
+      });
 
-    nozzle.addEventListener("touchend", stopSpraying);
-    nozzle.addEventListener("touchcancel", stopSpraying);
+      nozzle.addEventListener("touchend", stopSpraying);
+      nozzle.addEventListener("touchcancel", stopSpraying);
 
-    // Shake detection
-    let lastShake = 0;
-    window.addEventListener("devicemotion", (e) => {
-      const acc = e.accelerationIncludingGravity;
-      const total = Math.abs(acc.x) + Math.abs(acc.y) + Math.abs(acc.z);
-      if (total > 25 && Date.now() - lastShake > 1000) {
-        lastShake = Date.now();
-        soundFiles.shake.play();
-      }
-    });
+      // Shake detection
+      let lastShake = 0;
+      window.addEventListener("devicemotion", (e) => {
+        const acc = e.accelerationIncludingGravity;
+        const total = Math.abs(acc.x) + Math.abs(acc.y) + Math.abs(acc.z);
+        if (total > 25 && Date.now() - lastShake > 1000) {
+          lastShake = Date.now();
+          soundFiles.shake.play();
+        }
+      });
+    }
   </script>
 
 </body>
